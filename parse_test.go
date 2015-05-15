@@ -29,11 +29,17 @@ func TestParseTime(t *testing.T) {
 	now := time.Now().Local()
 	validate(t, "01:02:03", time.Date(now.Year(), now.Month(), now.Day(), 1, 2, 3, 0, now.Location()))
 
+	yesterday := time.Now().Add(-24 * time.Hour).Local()
+	validate(t, "yesterday", truncateDay(yesterday))
+
+	tomorrow := time.Now().Add(24 * time.Hour).Local()
+	validate(t, "tomorrow", truncateDay(tomorrow))
+
 	day1 := now.Add(-24 * time.Hour)
-	validate(t, "1 day ago", time.Date(day1.Year(), day1.Month(), day1.Day(), 0, 0, 0, 0, now.Location()))
+	validate(t, "1 day ago", truncateDay(day1))
 
 	day2 := now.Add(-3 * 24 * time.Hour)
-	validate(t, "3 days ago", time.Date(day2.Year(), day2.Month(), day2.Day(), 0, 0, 0, 0, now.Location()))
+	validate(t, "3 days ago", truncateDay(day2))
 
 	// this month
 	validate(t, "this month", time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()))

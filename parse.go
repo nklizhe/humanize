@@ -1,6 +1,7 @@
 package humanize
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -18,6 +19,9 @@ var (
 	regLastWeek    = regexp.MustCompile("last week")
 	regDaysAgo     = regexp.MustCompile("(\\d+)\\s+(d|day[s]?)\\s+ago")
 	regDaysLater   = regexp.MustCompile("(\\d+)\\s+(d|day[s]?)\\s+later")
+	regYesterday   = regexp.MustCompile("yesterday")
+	regToday       = regexp.MustCompile("today")
+	regTomorrow    = regexp.MustCompile("tomorrow")
 	regHoursAgo    = regexp.MustCompile("(\\d+)\\s+(h|hour[s]?)\\s+ago")
 	regHoursLater  = regexp.MustCompile("(\\d+)\\s+(h|hour[s]?)\\s+later")
 )
@@ -163,6 +167,21 @@ func ParseTime(s string) (time.Time, error) {
 		}
 	}
 
+	// try "yesterday"
+	if regYesterday.MatchString(s) {
+		return truncateDay(time.Now().Add(-24 * time.Hour).Local()), nil
+	}
+
+	// try "today"
+	if regToday.MatchString(s) {
+		return truncateDay(time.Now().Local()), nil
+	}
+
+	// try "tomorrow"
+	if regTomorrow.MatchString(s) {
+		return truncateDay(time.Now().Add(24 * time.Hour).Local()), nil
+	}
+
 	// try "n days later"
 	if regDaysLater.MatchString(s) {
 		m := regDaysLater.FindStringSubmatch(s)
@@ -197,5 +216,5 @@ func ParseTime(s string) (time.Time, error) {
 	}
 
 	// failed
-	return time.Unix(0, 0), err
+	return time.Unix(0, 0), fmt.Errorf("cannot parse \"%s\"", s)
 }
