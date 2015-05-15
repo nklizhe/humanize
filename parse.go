@@ -8,15 +8,19 @@ import (
 )
 
 var (
+	regNow             = regexp.MustCompile("^\\s*now\\s*(\\(\\s*\\))?\\s*$")
+	regNowWithDays     = regexp.MustCompile("^\\s*now\\s*(\\(\\s*\\))?\\s+([+-]{1})\\s+(\\d+)\\s*(d|day[s]?)")
+	regNowWithDuration = regexp.MustCompile("^\\s*now\\s*(\\(\\s*\\))?\\s+([+-]{1})\\s+(.*)$")
+
 	regDate        = regexp.MustCompile("(\\d{4})-(\\d{2})-(\\d{2})")
 	regTime        = regexp.MustCompile("(\\d{2}):(\\d{2}):(\\d{2})")
-	regThisMonth   = regexp.MustCompile("this month")
-	regLastMonth   = regexp.MustCompile("last month")
-	regNextMonth   = regexp.MustCompile("next month")
+	regThisMonth   = regexp.MustCompile("this\\s+month")
+	regLastMonth   = regexp.MustCompile("last\\s+month")
+	regNextMonth   = regexp.MustCompile("next\\s+month")
 	regMonthsAgo   = regexp.MustCompile("(\\d+)\\s+(month[s]?)\\s+ago")
 	regMonthsLater = regexp.MustCompile("(\\d+)\\s+(month[s]?)\\s+later")
-	regThisWeek    = regexp.MustCompile("this week")
-	regLastWeek    = regexp.MustCompile("last week")
+	regThisWeek    = regexp.MustCompile("this\\s+week")
+	regLastWeek    = regexp.MustCompile("last\\s+week")
 	regDaysAgo     = regexp.MustCompile("(\\d+)\\s+(d|day[s]?)\\s+ago")
 	regDaysLater   = regexp.MustCompile("(\\d+)\\s+(d|day[s]?)\\s+later")
 	regYesterday   = regexp.MustCompile("yesterday")
@@ -212,6 +216,46 @@ func ParseTime(s string) (time.Time, error) {
 			dur := time.Duration(hour) * time.Hour
 			today := time.Now().Add(dur).Local().Truncate(time.Hour)
 			return today, nil
+		}
+	}
+
+	// try "now"
+	if regNow.MatchString(s) {
+		return time.Now(), nil
+	}
+
+	// try "now +/- days"
+	if regNowWithDays.MatchString(s) {
+		m := regNowWithDays.FindStringSubmatch(s)
+		if len(m) > 3 {
+			sign := m[2]
+			days, err := strconv.ParseInt(m[3], 10, 16)
+			if err != nil {
+				return time.Unix(0, 0), err
+			}
+			dur := time.Duration(days*24) * time.Hour
+			if sign == "-" {
+				dur = -1 * dur
+			}
+			return time.Now().Add(dur), nil
+		}
+	}
+
+	// try "now +/- duration"
+	if regNowWithDuration.MatchString(s) {
+		m := regNowWithDuration.FindStringSubmatch(s)
+		// fmt.Fprintln(os.Stderr, "regNowWithDuration", s, m)
+		if len(m) > 3 {
+			sign := m[2]
+			durStr := m[3]
+			dur, err := time.ParseDuration(durStr)
+			if err != nil {
+				return time.Unix(0, 0), err
+			}
+			if sign == "-" {
+				dur = -1 * dur
+			}
+			return time.Now().Add(dur), nil
 		}
 	}
 

@@ -18,7 +18,7 @@ func mustParseRFC3339(s string) time.Time {
 func validate(t *testing.T, v string, expect time.Time) {
 	t1, err := ParseTime(v)
 	assert.NoError(t, err)
-	assert.Equal(t, expect, t1, "ParseTime(%s) should equal to %s, got: %s", v, expect.String(), t1.String())
+	assert.Equal(t, expect.Truncate(time.Second), t1.Truncate(time.Second), "ParseTime(%s) should equal to %s, got: %s", v, expect.String(), t1.String())
 }
 
 func TestParseTime(t *testing.T) {
@@ -71,4 +71,22 @@ func TestParseTime(t *testing.T) {
 	t2 := now.Add(-3 * time.Hour)
 	validate(t, "3 hours ago", time.Date(t2.Year(), t2.Month(), t2.Day(), t2.Hour(), 0, 0, 0, now.Location()))
 
+	// now
+	validate(t, "now", time.Now())
+	validate(t, "now()", time.Now())
+	validate(t, "now  ( ) ", time.Now())
+
+	// now +/- duration
+	validate(t, "now - 1h", time.Now().Add(-time.Hour))
+	validate(t, "now - 2m", time.Now().Add(-2*time.Minute))
+	validate(t, "now() - 10s", time.Now().Add(-10*time.Second))
+	validate(t, "now + 1m10s", time.Now().Add(70*time.Second))
+	validate(t, "now + 1h2m10s", time.Now().Add(1*time.Hour+2*time.Minute+10*time.Second))
+	validate(t, "now() + 125ms", time.Now().Add(125*time.Millisecond))
+
+	// now +/- days
+	validate(t, "now - 1d", time.Now().Add(-24*time.Hour))
+	validate(t, "now - 3 days", time.Now().Add(-3*24*time.Hour))
+	validate(t, "now + 1 day", time.Now().Add(24*time.Hour))
+	validate(t, "now + 3 days", time.Now().Add(3*24*time.Hour))
 }
